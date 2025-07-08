@@ -29,6 +29,8 @@ app.post('/', (req, res) => {
     });
 });
 
+mongoose.set('strictQuery', false);
+
 mongoose.connect(
   'mongodb+srv://aragon123x:pagecorp@cluster1.colklx3.mongodb.net/Node1?retryWrites=true&w=majority&appName=Cluster1',
   {
@@ -46,7 +48,6 @@ mongoose.connect(
     console.error('MongoDB connection error:', error);
   });
 
-mongoose.set('strictQuery', true);
 
 // Export the app for testing purposes
 module.exports = app;
