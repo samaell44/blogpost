@@ -100,8 +100,8 @@ const authorizeUser = async (req, res) => {
         const match = await bcrypt.compare(password, user.password);
         if (match) {
             // Use the user's name or email for the token payload
-            const payload = { user: user.name || user.email };
-            const accessToken = jwt.sign(payload, process.env.RANDOM_SECRET_KEY, { expiresIn: '15s' });
+            const payload = { user: user.name || user.email, role: user.role };
+            const accessToken = jwt.sign(payload, process.env.RANDOM_SECRET_KEY, { expiresIn: '1h' });
             const refreshToken = jwt.sign(payload, process.env.SECOND_RANDOM_SECRET_KEY, { expiresIn: '1d' });
             // Save the refresh token in the database
             const token = new Token(req.body);
@@ -124,9 +124,30 @@ const refreshTokens = (req, res) => {
     jwt.verify(refreshToken, process.env.SECOND_RANDOM_SECRET_KEY, (err, user) => {
         if (err) return res.sendStatus(403);
         const payload = { user: user.user };
-        const accessToken = jwt.sign(payload, process.env.RANDOM_SECRET_KEY, { expiresIn: '15s' });
+        const accessToken = jwt.sign(payload, process.env.RANDOM_SECRET_KEY, { expiresIn: '1h' });
         res.json({ accessToken });
     });
+}
+
+//Authorize by role
+const authorizeByRole = (role) => {
+    return (req, res, next) => {
+        if (req.user && req.user.role === role) {
+            next();
+        } else {
+            res.status(403).json({ message: 'Forbidden: You do not have the required role' });
+        }
+    };
+};
+
+// Logout user
+const logoutUser = (req, res) => {
+    const refreshToken = req.body.token;
+    if (refreshToken == null) return res.sendStatus(401);
+    // Remove the refresh token from the database or in-memory store
+    // For simplicity, we are not implementing a database here
+    // In a real application, you would remove it from the database
+    res.status(200).json({ message: 'User logged out successfully' });
 }
 
 
@@ -137,7 +158,7 @@ function authenticateToken(req, res, next) {
     if (token == null) return res.sendStatus(401);
 
     jwt.verify(token, process.env.RANDOM_SECRET_KEY, (err, user) => {
-        if (err) return res.sendStatus(403);
+        if (err) return res.status(403).json({ error: err.message });
         req.user = user;
         next();
     });
@@ -152,7 +173,8 @@ module.exports = {
     updateUser,
     deleteUser,
     authorizeUser,
-    authenticateToken
+    authenticateToken,
+    authorizeByRole
 };
 
 

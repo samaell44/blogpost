@@ -1,3 +1,4 @@
+require('events').EventEmitter.defaultMaxListeners = 20; // or higher if needed
 const express = require('express');
 const mongoose = require('mongoose');
 const productRoutes = require('./route/product.route.js');
@@ -78,27 +79,3 @@ mongoose.connect(
 module.exports = app;
 
 
-app.post('/users/logins', async (req, res) => {
-    const { email, password } = req.body;
-    if (!email || !password) {
-        return res.status(400).json({ message: 'Email and password are required' });
-    }
-    try {
-        const user = await users.findOne({ email });
-        if (!user) {
-            return res.status(404).json({ message: 'User not found' });
-        }
-        const match = await bcrypt.compare(password, user.password);
-        if (match) {
-            res.status(200).send(`${user.name} authorized successfully`);
-        } else {
-            res.status(401).send('Invalid password');
-        }
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-    const username = req.body.name;
-    const user = { user: username };
-    const accessToken = jwt.sign(user, process.env.RANDOM_SECRET_KEY);
-    res.json({ accessToken: accessToken }); 
-});
